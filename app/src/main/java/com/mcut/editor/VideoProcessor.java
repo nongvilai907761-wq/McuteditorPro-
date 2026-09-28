@@ -4,9 +4,6 @@ import android.content.Context;
 import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
-import androidx.media3.transformer.Composition;
-import androidx.media3.transformer.EditedMediaItem;
-import androidx.media3.transformer.EditedMediaItemSequence;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
 import androidx.media3.transformer.Transformer;
@@ -23,29 +20,28 @@ public class VideoProcessor {
 
     public void processAndExportVideo(Uri inputUri, File outputPath, final VideoCallback callback) {
         try {
+            // สร้าง MediaItem จาก Uri ที่ผู้ใช้เลือก
             MediaItem mediaItem = MediaItem.fromUri(inputUri);
-            EditedMediaItem editedMediaItem = new EditedMediaItem.Builder(mediaItem).build();
-            
-            EditedMediaItemSequence sequence = new EditedMediaItemSequence(java.util.Collections.singletonList(editedMediaItem));
-            Composition composition = new Composition.Builder(sequence).build();
 
+            // ตั้งค่า Transformer สำหรับแปลงและตัดต่อวิดีโอ (รองรับ Media3 เวอร์ชัน 1.2.0)
             transformer = new Transformer.Builder(context)
                     .setVideoMimeType(androidx.media3.common.MimeTypes.VIDEO_H264)
                     .setAudioMimeType(androidx.media3.common.MimeTypes.AUDIO_AAC)
                     .build();
 
-            transformer.start(composition, outputPath.getAbsolutePath());
+            // เริ่มกระบวนการแปลงไฟล์วิดีโอไปยังตำแหน่งปลายทาง
+            transformer.start(mediaItem, outputPath.getAbsolutePath());
 
             transformer.addListener(new Transformer.Listener() {
                 @Override
-                public void onCompleted(@NonNull Composition composition, @NonNull ExportResult exportResult) {
+                public void onCompleted(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult) {
                     if (callback != null) {
                         callback.onSuccess(outputPath);
                     }
                 }
 
                 @Override
-                public void onError(@NonNull Composition composition, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
                     if (callback != null) {
                         callback.onError(exportException.getMessage());
                     }
