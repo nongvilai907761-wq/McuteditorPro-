@@ -4,7 +4,10 @@ import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 import androidx.annotation.NonNull;
+import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
+import androidx.media3.transformer.Composition;
+import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
 import androidx.media3.transformer.Transformer;
@@ -33,7 +36,7 @@ public class VideoProcessor {
         }
 
         try {
-            androidx.media3.common.MediaItem mediaItem = androidx.media3.common.MediaItem.fromUri(inputUri);
+            MediaItem mediaItem = MediaItem.fromUri(inputUri);
 
             transformer = new Transformer.Builder(context)
                     .setVideoMimeType(MimeTypes.VIDEO_H264)
@@ -41,13 +44,13 @@ public class VideoProcessor {
                     .build();
 
             transformer.addListener(new Transformer.Listener() {
-                public void onCompleted(@NonNull androidx.media3.common.MediaItem mediaItem) {
+                public void onCompleted(@NonNull MediaItem mediaItem) {
                     if (callback != null) {
                         callback.onSuccess(outputPath);
                     }
                 }
 
-                public void onError(@NonNull androidx.media3.common.MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
                     if (callback != null) {
                         callback.onError(exportException.getMessage());
                     }
@@ -63,9 +66,55 @@ public class VideoProcessor {
         }
     }
 
-    // ใช้ List<?> เพื่อรองรับ MediaItem ทุกประเภทจาก MainActivity
-    public void processVideoWithStyle(String style, List<?> timelineList) {
-        Log.d(TAG, "processVideoWithStyle: " + style);
+    // --- ฟังก์ชันหลักสำหรับ VLOG CINEMATIC STYLE ---
+    public void processVideoWithStyle(String style, List<?> timelineList, Uri inputUri, File outputPath, final VideoCallback callback) {
+        if (context == null) {
+            if (callback != null) callback.onError("Context is null");
+            return;
+        }
+
+        try {
+            Log.d(TAG, "Starting processing style: " + style);
+
+            // ตรวจสอบว่าเป็นสไตล์ Vlog หรือไม่
+            if ("VLOG CINEMATIC".equals(style)) {
+                MediaItem mediaItem = MediaItem.fromUri(inputUri);
+
+                // สร้าง EditedMediaItem เพื่อเตรียมใส่เอฟเฟกต์สำหรับแนว Vlog
+                EditedMediaItem editedMediaItem = new EditedMediaItem.Builder(mediaItem)
+                        // ตรงนี้สามารถพ่วงเอฟเฟกต์ภาพ/แสงเพิ่มเติมได้ในอนาคต
+                        .build();
+
+                transformer = new Transformer.Builder(context)
+                        .setVideoMimeType(MimeTypes.VIDEO_H264)
+                        .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                        .build();
+
+                transformer.addListener(new Transformer.Listener() {
+                    @Override
+                    public void onCompleted(@NonNull MediaItem mediaItem) {
+                        Log.d(TAG, "Vlog Export Completed Successfully");
+                        if (callback != null) callback.onSuccess(outputPath);
+                    }
+
+                    @Override
+                    public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                        Log.e(TAG, "Vlog Export Error: " + exportException.getMessage());
+                        if (callback != null) callback.onError(exportException.getMessage());
+                    }
+                });
+
+                // เริ่มกระบวนการแปลงและส่งออกวิดีโอ
+                transformer.start(mediaItem, outputPath.getAbsolutePath());
+            } else {
+                if (callback != null) callback.onError("Unknown style selected");
+            }
+
+        } catch (Exception e) {
+            if (callback != null) {
+                callback.onError(e.getMessage());
+            }
+        }
     }
 
     public void testFFmpegConnection() {
