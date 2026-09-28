@@ -11,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.MediaItem;
 
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnStyleStory = findViewById(R.id.btnStyleStory);
         Button btnStyleAds = findViewById(R.id.btnStyleAds);
 
-        // เปลี่ยนให้ปุ่มเลือกสไตล์ ทำหน้าที่ "แค่เลือกและบันทึกค่าไว้" ยังไม่เรนเดอร์
+        // ระบบเลือกสไตล์ (บันทึกค่าไว้ก่อน ยังไม่เรนเดอร์ทันที)
         View.OnClickListener styleListener = v -> {
             Button b = (Button) v;
             currentSelectedStyle = b.getText().toString();
@@ -59,30 +60,23 @@ public class MainActivity extends AppCompatActivity {
         btnAddMedia.setOnClickListener(v -> openFilePicker());
         btnTestEngine.setOnClickListener(v -> videoProcessor.testFFmpegConnection());
         
-        // ย้ายการประมวลผลและการเรนเดอร์ทั้งหมดมาไว้ที่ปุ่ม EXPORT ตัวนี้!
+        // ปุ่ม Export สั่งประมวลผลรวมไฟล์มีเดียทั้งหมดตามสไตล์ที่เลือก
         btnSaveRender.setOnClickListener(v -> startVideoProcessingWithStyle());
     }
 
-    // --- ฟังก์ชันสั่งประมวลผลและตัดต่อ (ทำงานเมื่อกดปุ่ม EXPORT เท่านั้น) ---
     private void startVideoProcessingWithStyle() {
         if (timelineList.isEmpty()) {
-            Toast.makeText(this, "กรุณาเพิ่มไฟล์วิดีโอก่อนกด Export!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "กรุณาเพิ่มไฟล์มีเดียอย่างน้อย 1 ไฟล์ก่อนกด Export!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์
         MediaItem firstItem = timelineList.get(0);
         Uri inputUri = null;
         if (firstItem.localConfiguration != null) {
             inputUri = firstItem.localConfiguration.uri;
         }
 
-        if (inputUri == null) {
-            Toast.makeText(this, "ไม่พบที่อยู่ของไฟล์มีเดีย!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // กำหนดไฟล์ขาออก (Output File) ไปที่โฟลเดอร์ Movies ของเครื่อง
+        // กำหนดไฟล์ขาออกไปที่โฟลเดอร์ Movies
         File exportDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
         if (!exportDir.exists()) {
             exportDir.mkdirs();
@@ -91,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
         Toast.makeText(this, "กำลังเริ่มตัดต่อสไตล์ " + currentSelectedStyle + "...", Toast.LENGTH_LONG).show();
 
-        // ส่งข้อมูลเข้า VideoProcessor เพื่อทำการแปลงและเรนเดอร์จริง
+        // ส่งรายการไทม์ไลน์ทั้งหมด (ทั้งวิดีโอและรูปภาพ) ไปให้ VideoProcessor ประมวลผล
         videoProcessor.processVideoWithStyle(
                 currentSelectedStyle,
                 timelineList,
@@ -147,9 +141,11 @@ public class MainActivity extends AppCompatActivity {
         timelineList.add(mediaItem);
     }
 
+    // อัปเดตหน้าจอไทม์ไลน์ พร้อมเพิ่มระบบจิ้มที่คลิปเพื่อลบออกได้
     private void updateTimelineUI() {
         containerMediaList.removeAllViews();
         for (int i = 0; i < timelineList.size(); i++) {
+            final int index = i;
             TextView itemTv = new TextView(this);
             itemTv.setText("Clip #" + (i + 1));
             itemTv.setTextColor(0xFFFFFFFF);
@@ -163,8 +159,25 @@ public class MainActivity extends AppCompatActivity {
             itemTv.setLayoutParams(params);
             itemTv.setBackgroundColor(0xFF334155);
 
+            // ดักจับการคลิกที่กล่องคลิป เพื่อถามยืนยันการลบ
+            itemTv.setOnClickListener(v -> {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("ลบไฟล์มีเดีย")
+                        .setMessage("คุณต้องการลบ Clip #" + (index + 1) + " นี้ออกจากไทม์ไลน์ใช่หรือไม่?")
+                        .setPositiveButton("ลบ", (dialog, which) -> {
+                            timelineList.remove(index);
+                            updateTimelineUI();
+                            Toast.makeText(MainActivity.this, "ลบเรียบร้อยแล้ว", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("ยกเลิก", null)
+                        .show();
+            });
+
             containerMediaList.addView(itemTv);
         }
-        Toast.makeText(this, "อัปเดตไทม์ไลน์แล้ว: " + timelineList.size() + " ไฟล์", Toast.LENGTH_SHORT).show();
+
+        if (!timelineList.isEmpty()) {
+            Toast.makeText(this, "อัปเดตไทม์ไลน์แล้ว: " + timelineList.size() + " ไฟล์", Toast.LENGTH_SHORT).show();
+        }
     }
 }
