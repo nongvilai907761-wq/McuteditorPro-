@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.media3.common.MediaItem;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
             currentSelectedStyle = b.getText().toString();
             Toast.makeText(this, "เลือกสไตล์: " + currentSelectedStyle, Toast.LENGTH_SHORT).show();
             
-            // เรียกใช้งานฟังก์ชันเรนเดอร์วิดีโอจริง (สเต็ปที่ 1)
+            // เรียกใช้งานฟังก์ชันเรนเดอร์วิดีโอจริง
             startVideoProcessingWithStyle();
         };
 
@@ -62,18 +63,26 @@ public class MainActivity extends AppCompatActivity {
         btnSaveRender.setOnClickListener(v -> videoProcessor.saveGeneratedVideo(timelineList));
     }
 
-    // --- ฟังก์ชันสำหรับสั่งประมวลผลวิดีโอตามสไตล์ที่เลือก (เชื่อมโยงกับ VideoProcessor) ---
+    // --- ฟังก์ชันสำหรับสั่งประมวลผลวิดีโอตามสไตล์ที่เลือก ---
     private void startVideoProcessingWithStyle() {
         if (timelineList.isEmpty()) {
             Toast.makeText(this, "กรุณาเพิ่มไฟล์วิดีโอก่อนเลือกสไตล์!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์
+        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์ และดึง Uri ผ่าน localConfiguration อย่างถูกต้อง
         MediaItem firstItem = timelineList.get(0);
-        Uri inputUri = Uri.parse(firstItem.getUriString());
+        Uri inputUri = null;
+        if (firstItem.localConfiguration != null) {
+            inputUri = firstItem.localConfiguration.uri;
+        }
 
-        // กำหนดไฟล์ขาออก (Output File) ไปที่ โฟลเดอร์ Movies ของเครื่อง
+        if (inputUri == null) {
+            Toast.makeText(this, "ไม่พบที่อยู่ของไฟล์มีเดีย!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // กำหนดไฟล์ขาออก (Output File) ไปที่โฟลเดอร์ Movies ของเครื่อง
         File exportDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
         if (!exportDir.exists()) {
             exportDir.mkdirs();
@@ -82,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
         Toast.makeText(this, "กำลังเริ่มประมวลผลสไตล์ " + currentSelectedStyle + "...", Toast.LENGTH_LONG).show();
 
-        // ส่งข้อมูลทั้งหมดเข้า VideoProcessor ที่เราเขียนไว้
+        // ส่งข้อมูลเข้า VideoProcessor เพื่อทำการแปลงและเรนเดอร์จริง
         videoProcessor.processVideoWithStyle(
                 currentSelectedStyle,
                 timelineList,
@@ -134,10 +143,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addUriToTimeline(Uri uri) {
-        String uriStr = uri.toString();
-        String mimeType = getContentResolver().getType(uri);
-        if (mimeType == null) mimeType = "";
-        timelineList.add(new MediaItem(uriStr, mimeType));
+        // สร้าง MediaItem ของ AndroidX Media3 โดยใช้ MediaItem.fromUri()
+        MediaItem mediaItem = MediaItem.fromUri(uri);
+        timelineList.add(mediaItem);
     }
 
     private void updateTimelineUI() {
