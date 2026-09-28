@@ -32,7 +32,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // ไลบรารีจัดการและประมวลผลวิดีโอตัวใหม่ (แทนที่ FFmpeg เก่า)
+    // AndroidX Media3 สำหรับประมวลผลวิดีโออย่างเป็นทางการ
     implementation 'androidx.media3:media3-exoplayer:1.2.0'
     implementation 'androidx.media3:media3-ui:1.2.0'
     implementation 'androidx.media3:media3-transformer:1.2.0'
