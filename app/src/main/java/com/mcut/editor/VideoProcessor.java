@@ -6,7 +6,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
-import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
@@ -66,7 +65,7 @@ public class VideoProcessor {
         }
     }
 
-    // --- ฟังก์ชันหลักสำหรับ VLOG CINEMATIC STYLE ---
+    // --- ฟังก์ชันประมวลผลรองรับสไตล์ "M cut editor" และสไตล์อื่นๆ ---
     public void processVideoWithStyle(String style, List<?> timelineList, Uri inputUri, File outputPath, final VideoCallback callback) {
         if (context == null) {
             if (callback != null) callback.onError("Context is null");
@@ -74,16 +73,13 @@ public class VideoProcessor {
         }
 
         try {
-            Log.d(TAG, "Starting processing style: " + style);
+            Log.d(TAG, "Processing video with style: " + style);
 
-            // ตรวจสอบว่าเป็นสไตล์ Vlog หรือไม่
-            if ("VLOG CINEMATIC".equals(style)) {
+            // เพิ่มเงื่อนไขรองรับสไตล์ "M cut editor" ของคุณเองที่นี่
+            if ("M cut editor".equals(style) || "VLOG CINEMATIC".equals(style) || "FREE FIRE HIGHLIGHT".equals(style)) {
                 MediaItem mediaItem = MediaItem.fromUri(inputUri);
 
-                // สร้าง EditedMediaItem เพื่อเตรียมใส่เอฟเฟกต์สำหรับแนว Vlog
-                EditedMediaItem editedMediaItem = new EditedMediaItem.Builder(mediaItem)
-                        // ตรงนี้สามารถพ่วงเอฟเฟกต์ภาพ/แสงเพิ่มเติมได้ในอนาคต
-                        .build();
+                EditedMediaItem editedMediaItem = new EditedMediaItem.Builder(mediaItem).build();
 
                 transformer = new Transformer.Builder(context)
                         .setVideoMimeType(MimeTypes.VIDEO_H264)
@@ -93,21 +89,20 @@ public class VideoProcessor {
                 transformer.addListener(new Transformer.Listener() {
                     @Override
                     public void onCompleted(@NonNull MediaItem mediaItem) {
-                        Log.d(TAG, "Vlog Export Completed Successfully");
+                        Log.d(TAG, style + " Export Completed Successfully");
                         if (callback != null) callback.onSuccess(outputPath);
                     }
 
                     @Override
                     public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
-                        Log.e(TAG, "Vlog Export Error: " + exportException.getMessage());
+                        Log.e(TAG, style + " Export Error: " + exportException.getMessage());
                         if (callback != null) callback.onError(exportException.getMessage());
                     }
                 });
 
-                // เริ่มกระบวนการแปลงและส่งออกวิดีโอ
                 transformer.start(mediaItem, outputPath.getAbsolutePath());
             } else {
-                if (callback != null) callback.onError("Unknown style selected");
+                if (callback != null) callback.onError("Unknown style selected: " + style);
             }
 
         } catch (Exception e) {
