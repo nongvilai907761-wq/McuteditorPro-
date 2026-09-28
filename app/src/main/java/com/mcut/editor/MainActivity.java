@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private final List<MediaItem> timelineList = new ArrayList<>();
     private CustomVideoView videoPreview;
     private LinearLayout containerMediaList;
-    private String currentSelectedStyle = "Free Fire Highlight";
+    private String currentSelectedStyle = "Free Fire Highlight"; // ค่าเริ่มต้น
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +44,11 @@ public class MainActivity extends AppCompatActivity {
         Button btnStyleStory = findViewById(R.id.btnStyleStory);
         Button btnStyleAds = findViewById(R.id.btnStyleAds);
 
+        // เปลี่ยนให้ปุ่มเลือกสไตล์ ทำหน้าที่ "แค่เลือกและบันทึกค่าไว้" ยังไม่เรนเดอร์
         View.OnClickListener styleListener = v -> {
             Button b = (Button) v;
             currentSelectedStyle = b.getText().toString();
-            Toast.makeText(this, "เลือกสไตล์: " + currentSelectedStyle, Toast.LENGTH_SHORT).show();
-            
-            // เรียกใช้งานฟังก์ชันเรนเดอร์วิดีโอจริง
-            startVideoProcessingWithStyle();
+            Toast.makeText(this, "เลือกสไตล์: " + currentSelectedStyle + " (กดปุ่ม Export เพื่อเริ่มตัดต่อ)", Toast.LENGTH_SHORT).show();
         };
 
         btnStyleFreeFire.setOnClickListener(styleListener);
@@ -60,17 +58,19 @@ public class MainActivity extends AppCompatActivity {
 
         btnAddMedia.setOnClickListener(v -> openFilePicker());
         btnTestEngine.setOnClickListener(v -> videoProcessor.testFFmpegConnection());
-        btnSaveRender.setOnClickListener(v -> videoProcessor.saveGeneratedVideo(timelineList));
+        
+        // ย้ายการประมวลผลและการเรนเดอร์ทั้งหมดมาไว้ที่ปุ่ม EXPORT ตัวนี้!
+        btnSaveRender.setOnClickListener(v -> startVideoProcessingWithStyle());
     }
 
-    // --- ฟังก์ชันสำหรับสั่งประมวลผลวิดีโอตามสไตล์ที่เลือก ---
+    // --- ฟังก์ชันสั่งประมวลผลและตัดต่อ (ทำงานเมื่อกดปุ่ม EXPORT เท่านั้น) ---
     private void startVideoProcessingWithStyle() {
         if (timelineList.isEmpty()) {
-            Toast.makeText(this, "กรุณาเพิ่มไฟล์วิดีโอก่อนเลือกสไตล์!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "กรุณาเพิ่มไฟล์วิดีโอก่อนกด Export!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์ และดึง Uri ผ่าน localConfiguration อย่างถูกต้อง
+        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์
         MediaItem firstItem = timelineList.get(0);
         Uri inputUri = null;
         if (firstItem.localConfiguration != null) {
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         }
         File outputPath = new File(exportDir, "MCut_Output_" + System.currentTimeMillis() + ".mp4");
 
-        Toast.makeText(this, "กำลังเริ่มประมวลผลสไตล์ " + currentSelectedStyle + "...", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "กำลังเริ่มตัดต่อสไตล์ " + currentSelectedStyle + "...", Toast.LENGTH_LONG).show();
 
         // ส่งข้อมูลเข้า VideoProcessor เพื่อทำการแปลงและเรนเดอร์จริง
         videoProcessor.processVideoWithStyle(
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(File outputFile) {
                         runOnUiThread(() -> {
-                            Toast.makeText(MainActivity.this, "ตัดต่อสำเร็จ! บันทึกที่: " + outputFile.getName(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "ตัดต่อสำเร็จ! บันทึกที่โฟลเดอร์ Movies: " + outputFile.getName(), Toast.LENGTH_LONG).show();
                         });
                     }
 
@@ -143,7 +143,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addUriToTimeline(Uri uri) {
-        // สร้าง MediaItem ของ AndroidX Media3 โดยใช้ MediaItem.fromUri()
         MediaItem mediaItem = MediaItem.fromUri(uri);
         timelineList.add(mediaItem);
     }
