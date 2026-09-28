@@ -27,19 +27,18 @@ public class VideoProcessor {
                     .setAudioMimeType(androidx.media3.common.MimeTypes.AUDIO_AAC)
                     .build();
 
-            // ปรับใช้งาน Listener รูปแบบมาตรฐานของ Media3 Transformer 1.2.0
             transformer.start(mediaItem, outputPath.getAbsolutePath());
 
             transformer.addListener(new Transformer.Listener() {
                 @Override
-                public void onCompleted(@NonNull Composition composition) {
+                public void onCompleted(@NonNull MediaItem mediaItem) {
                     if (callback != null) {
                         callback.onSuccess(outputPath);
                     }
                 }
 
                 @Override
-                public void onError(@NonNull Composition composition, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
                     if (callback != null) {
                         callback.onError(exportException.getMessage());
                     }
@@ -47,20 +46,8 @@ public class VideoProcessor {
             });
 
         } catch (Exception e) {
-            // หากเรียกใช้งานผ่าน Builder แบบใช้งานเก่า ให้รองรับการเรียกสลับโหมดพื้นฐาน
-            fallbackProcess(mediaItem, outputPath, callback);
-        }
-    }
-
-    private void fallbackProcess(MediaItem mediaItem, File outputPath, final VideoCallback callback) {
-        try {
-            transformer.start(mediaItem, outputPath.getAbsolutePath());
             if (callback != null) {
-                callback.onSuccess(outputPath);
-            }
-        } catch (Exception ex) {
-            if (callback != null) {
-                callback.onError(ex.getMessage());
+                callback.onError(e.getMessage());
             }
         }
     }
