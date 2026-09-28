@@ -3,6 +3,7 @@ package com.mcut.editor;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +46,10 @@ public class MainActivity extends AppCompatActivity {
         View.OnClickListener styleListener = v -> {
             Button b = (Button) v;
             currentSelectedStyle = b.getText().toString();
-            videoProcessor.processVideoWithStyle(currentSelectedStyle, timelineList);
+            Toast.makeText(this, "เลือกสไตล์: " + currentSelectedStyle, Toast.LENGTH_SHORT).show();
+            
+            // เรียกใช้งานฟังก์ชันเรนเดอร์วิดีโอจริง (สเต็ปที่ 1)
+            startVideoProcessingWithStyle();
         };
 
         btnStyleFreeFire.setOnClickListener(styleListener);
@@ -55,6 +60,50 @@ public class MainActivity extends AppCompatActivity {
         btnAddMedia.setOnClickListener(v -> openFilePicker());
         btnTestEngine.setOnClickListener(v -> videoProcessor.testFFmpegConnection());
         btnSaveRender.setOnClickListener(v -> videoProcessor.saveGeneratedVideo(timelineList));
+    }
+
+    // --- ฟังก์ชันสำหรับสั่งประมวลผลวิดีโอตามสไตล์ที่เลือก (เชื่อมโยงกับ VideoProcessor) ---
+    private void startVideoProcessingWithStyle() {
+        if (timelineList.isEmpty()) {
+            Toast.makeText(this, "กรุณาเพิ่มไฟล์วิดีโอก่อนเลือกสไตล์!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // ดึงไฟล์วิดีโอตัวแรกจากไทม์ไลน์
+        MediaItem firstItem = timelineList.get(0);
+        Uri inputUri = Uri.parse(firstItem.getUriString());
+
+        // กำหนดไฟล์ขาออก (Output File) ไปที่ โฟลเดอร์ Movies ของเครื่อง
+        File exportDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
+        if (!exportDir.exists()) {
+            exportDir.mkdirs();
+        }
+        File outputPath = new File(exportDir, "MCut_Output_" + System.currentTimeMillis() + ".mp4");
+
+        Toast.makeText(this, "กำลังเริ่มประมวลผลสไตล์ " + currentSelectedStyle + "...", Toast.LENGTH_LONG).show();
+
+        // ส่งข้อมูลทั้งหมดเข้า VideoProcessor ที่เราเขียนไว้
+        videoProcessor.processVideoWithStyle(
+                currentSelectedStyle,
+                timelineList,
+                inputUri,
+                outputPath,
+                new VideoProcessor.VideoCallback() {
+                    @Override
+                    public void onSuccess(File outputFile) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, "ตัดต่อสำเร็จ! บันทึกที่: " + outputFile.getName(), Toast.LENGTH_LONG).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this, "เกิดข้อผิดพลาด: " + errorMessage, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }
+        );
     }
 
     private void openFilePicker() {
