@@ -11,7 +11,10 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { 
+            url 'https://maven.pkg.github.com/arthenica/ffmpeg-kit'
+            // เพิ่มส่วนนี้เพื่อดึงไลบรารีของ ffmpeg-kit โดยตรง
+        }
         maven { url 'https://repo1.maven.org/maven2/' }
     }
 }
