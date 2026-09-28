@@ -30,7 +30,7 @@ public class VideoProcessor {
         this.context = null;
     }
 
-    // เมธอดหลักที่รับ List ของ MediaItem จากไทม์ไลน์ (รองรับทั้งรูปภาพและวิดีโอปะปนกัน)
+    // เมธอดหลักรองรับทั้งรูปภาพและวิดีโอสลับกันในไทม์ไลน์
     public void processVideoWithStyle(String style, List<MediaItem> timelineList, Uri fallbackUri, File outputPath, final VideoCallback callback) {
         if (context == null) {
             if (callback != null) callback.onError("Context is null");
@@ -38,18 +38,30 @@ public class VideoProcessor {
         }
 
         try {
-            Log.d(TAG, "Processing multi-media timeline with style: " + style + ", total items: " + (timelineList != null ? timelineList.size() : 0));
+            Log.d(TAG, "Processing mixed timeline with style: " + style + ", total items: " + (timelineList != null ? timelineList.size() : 0));
 
             List<EditedMediaItem> editedMediaItems = new ArrayList<>();
 
             if (timelineList != null && !timelineList.isEmpty()) {
-                // วนลูปแปลงทุก MediaItem ในไทม์ไลน์ให้เป็น EditedMediaItem
                 for (MediaItem mediaItem : timelineList) {
-                    EditedMediaItem editedItem = new EditedMediaItem.Builder(mediaItem).build();
-                    editedMediaItems.add(editedItem);
+                    // ตรวจสอบประเภทไฟล์ว่าเป็นรูปภาพหรือไม่จาก URI หรือประเภทที่มีการตั้งค่า
+                    boolean isImage = isImageItem(mediaItem);
+
+                    MediaItem.Builder mediaItemBuilder = mediaItem.buildUpon();
+                    EditedMediaItem.Builder editedItemBuilder;
+
+                    if (isImage) {
+                        // กำหนดให้รูปภาพแปลงเป็นวิดีโอสั้น แสดงผลรูปละ 3 วินาที (3000 มิลลิวินาที)
+                        mediaItemBuilder.setImageDurationMs(3000);
+                        editedItemBuilder = new EditedMediaItem.Builder(mediaItemBuilder.build());
+                    } else {
+                        // กรณีเป็นวิดีโอใช้งานปกติ
+                        editedItemBuilder = new EditedMediaItem.Builder(mediaItem);
+                    }
+
+                    editedMediaItems.add(editedItemBuilder.build());
                 }
             } else if (fallbackUri != null) {
-                // กรณีฉุกเฉินถ้าไทม์ไลน์ว่าง ให้ใช้ไฟล์สำรองเดี่ยวๆ
                 MediaItem singleItem = MediaItem.fromUri(fallbackUri);
                 editedMediaItems.add(new EditedMediaItem.Builder(singleItem).build());
             } else {
@@ -57,7 +69,6 @@ public class VideoProcessor {
                 return;
             }
 
-            // สร้าง Sequence และ Composition (ตัดเมธอด setVideoMimeType ที่ไม่รองรับออก)
             EditedMediaItemSequence sequence = new EditedMediaItemSequence(editedMediaItems);
             Composition composition = new Composition.Builder(sequence).build();
 
@@ -66,26 +77,36 @@ public class VideoProcessor {
             transformer.addListener(new Transformer.Listener() {
                 @Override
                 public void onCompleted(@NonNull Composition composition, @NonNull ExportResult exportResult) {
-                    Log.d(TAG, style + " Multi-media Export Completed Successfully");
+                    Log.d(TAG, style + " Mixed Media Export Completed Successfully");
                     if (callback != null) callback.onSuccess(outputPath);
                 }
 
                 @Override
                 public void onError(@NonNull Composition composition, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
-                    Log.e(TAG, style + " Multi-media Export Error: " + exportException.getMessage());
+                    Log.e(TAG, style + " Mixed Media Export Error: " + exportException.getMessage());
                     if (callback != null) callback.onError(exportException.getMessage());
                 }
             });
 
-            // เริ่มกระบวนการเรนเดอร์ Composition แบบหลายไฟล์
             transformer.start(composition, outputPath.getAbsolutePath());
 
         } catch (Exception e) {
-            Log.e(TAG, "Exception during composition: " + e.getMessage());
+            Log.e(TAG, "Exception during mixed composition: " + e.getMessage());
             if (callback != null) {
                 callback.onError(e.getMessage());
             }
         }
+    }
+
+    // ฟังก์ชันช่วยเช็คว่าเป็นไฟล์รูปภาพหรือไม่
+    private boolean isImageItem(MediaItem mediaItem) {
+        if (mediaItem.localConfiguration != null && mediaItem.localConfiguration.uri != null) {
+            String uriString = mediaItem.localConfiguration.uri.toString().toLowerCase();
+            return uriString.endsWith(".jpg") || uriString.endsWith(".jpeg") || 
+                   uriString.endsWith(".png") || uriString.endsWith(".webp") || 
+                   uriString.contains("image");
+        }
+        return false;
     }
 
     public void processAndExportVideo(Uri inputUri, File outputPath, final VideoCallback callback) {
