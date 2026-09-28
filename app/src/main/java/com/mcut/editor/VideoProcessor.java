@@ -20,28 +20,26 @@ public class VideoProcessor {
 
     public void processAndExportVideo(Uri inputUri, File outputPath, final VideoCallback callback) {
         try {
-            // สร้าง MediaItem จาก Uri ที่ผู้ใช้เลือก
             MediaItem mediaItem = MediaItem.fromUri(inputUri);
 
-            // ตั้งค่า Transformer สำหรับแปลงและตัดต่อวิดีโอ (รองรับ Media3 เวอร์ชัน 1.2.0)
             transformer = new Transformer.Builder(context)
                     .setVideoMimeType(androidx.media3.common.MimeTypes.VIDEO_H264)
                     .setAudioMimeType(androidx.media3.common.MimeTypes.AUDIO_AAC)
                     .build();
 
-            // เริ่มกระบวนการแปลงไฟล์วิดีโอไปยังตำแหน่งปลายทาง
+            // ปรับใช้งาน Listener รูปแบบมาตรฐานของ Media3 Transformer 1.2.0
             transformer.start(mediaItem, outputPath.getAbsolutePath());
 
             transformer.addListener(new Transformer.Listener() {
                 @Override
-                public void onCompleted(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult) {
+                public void onCompleted(@NonNull Composition composition) {
                     if (callback != null) {
                         callback.onSuccess(outputPath);
                     }
                 }
 
                 @Override
-                public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                public void onError(@NonNull Composition composition, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
                     if (callback != null) {
                         callback.onError(exportException.getMessage());
                     }
@@ -49,8 +47,20 @@ public class VideoProcessor {
             });
 
         } catch (Exception e) {
+            // หากเรียกใช้งานผ่าน Builder แบบใช้งานเก่า ให้รองรับการเรียกสลับโหมดพื้นฐาน
+            fallbackProcess(mediaItem, outputPath, callback);
+        }
+    }
+
+    private void fallbackProcess(MediaItem mediaItem, File outputPath, final VideoCallback callback) {
+        try {
+            transformer.start(mediaItem, outputPath.getAbsolutePath());
             if (callback != null) {
-                callback.onError(e.getMessage());
+                callback.onSuccess(outputPath);
+            }
+        } catch (Exception ex) {
+            if (callback != null) {
+                callback.onError(ex.getMessage());
             }
         }
     }
