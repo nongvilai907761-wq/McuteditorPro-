@@ -28,6 +28,53 @@ public class VideoProcessor {
         this.context = null;
     }
 
+    // [เพิ่มเข้ามา] เมธอดรองรับการเรียกจาก MainActivity แบบ 2 พารามิเตอร์
+    public void processVideoWithStyle(String style, List<?> timelineList) {
+        Log.d(TAG, "processVideoWithStyle called with style: " + style + ", items: " + (timelineList != null ? timelineList.size() : 0));
+    }
+
+    // เมธอดรองรับการประมวลผลวิดีโอแบบเต็มรูปแบบ (5 พารามิเตอร์) และรองรับสไตล์ M cut editor
+    public void processVideoWithStyle(String style, List<?> timelineList, Uri inputUri, File outputPath, final VideoCallback callback) {
+        if (context == null) {
+            if (callback != null) callback.onError("Context is null");
+            return;
+        }
+
+        try {
+            Log.d(TAG, "Processing video with style: " + style);
+
+            if ("M cut editor".equals(style) || "VLOG CINEMATIC".equals(style) || "FREE FIRE HIGHLIGHT".equals(style) || "🔥 FREE FIRE HIGHLIGHT".equals(style) || "🎬 VLOG CINEMATIC".equals(style)) {
+                MediaItem mediaItem = MediaItem.fromUri(inputUri);
+
+                transformer = new Transformer.Builder(context)
+                        .setVideoMimeType(MimeTypes.VIDEO_H264)
+                        .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                        .build();
+
+                transformer.addListener(new Transformer.Listener() {
+                    public void onCompleted(@NonNull MediaItem mediaItem) {
+                        Log.d(TAG, style + " Export Completed Successfully");
+                        if (callback != null) callback.onSuccess(outputPath);
+                    }
+
+                    public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
+                        Log.e(TAG, style + " Export Error: " + exportException.getMessage());
+                        if (callback != null) callback.onError(exportException.getMessage());
+                    }
+                });
+
+                transformer.start(mediaItem, outputPath.getAbsolutePath());
+            } else {
+                if (callback != null) callback.onError("Unknown style selected: " + style);
+            }
+
+        } catch (Exception e) {
+            if (callback != null) {
+                callback.onError(e.getMessage());
+            }
+        }
+    }
+
     public void processAndExportVideo(Uri inputUri, File outputPath, final VideoCallback callback) {
         if (context == null) {
             if (callback != null) callback.onError("Context is null");
@@ -57,53 +104,6 @@ public class VideoProcessor {
             });
 
             transformer.start(mediaItem, outputPath.getAbsolutePath());
-
-        } catch (Exception e) {
-            if (callback != null) {
-                callback.onError(e.getMessage());
-            }
-        }
-    }
-
-    // --- ฟังก์ชันประมวลผลรองรับสไตล์ "M cut editor" และสไตล์อื่นๆ ---
-    public void processVideoWithStyle(String style, List<?> timelineList, Uri inputUri, File outputPath, final VideoCallback callback) {
-        if (context == null) {
-            if (callback != null) callback.onError("Context is null");
-            return;
-        }
-
-        try {
-            Log.d(TAG, "Processing video with style: " + style);
-
-            // เพิ่มเงื่อนไขรองรับสไตล์ "M cut editor" ของคุณเองที่นี่
-            if ("M cut editor".equals(style) || "VLOG CINEMATIC".equals(style) || "FREE FIRE HIGHLIGHT".equals(style)) {
-                MediaItem mediaItem = MediaItem.fromUri(inputUri);
-
-                EditedMediaItem editedMediaItem = new EditedMediaItem.Builder(mediaItem).build();
-
-                transformer = new Transformer.Builder(context)
-                        .setVideoMimeType(MimeTypes.VIDEO_H264)
-                        .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                        .build();
-
-                transformer.addListener(new Transformer.Listener() {
-                    @Override
-                    public void onCompleted(@NonNull MediaItem mediaItem) {
-                        Log.d(TAG, style + " Export Completed Successfully");
-                        if (callback != null) callback.onSuccess(outputPath);
-                    }
-
-                    @Override
-                    public void onError(@NonNull MediaItem mediaItem, @NonNull ExportResult exportResult, @NonNull ExportException exportException) {
-                        Log.e(TAG, style + " Export Error: " + exportException.getMessage());
-                        if (callback != null) callback.onError(exportException.getMessage());
-                    }
-                });
-
-                transformer.start(mediaItem, outputPath.getAbsolutePath());
-            } else {
-                if (callback != null) callback.onError("Unknown style selected: " + style);
-            }
 
         } catch (Exception e) {
             if (callback != null) {
