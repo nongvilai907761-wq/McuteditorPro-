@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#0F172A">
+
+    <com.mcut.editor.CustomVideoView
+        android:id="@+id/videoPreview"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="12dp"
+        android:background="#1E293B" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Timeline Tracks"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_marginBottom="16dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/containerMediaList"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+    </HorizontalScrollView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Video Style"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="6dp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="16dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/btnStyleFreeFire"
+                style="?attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginRight="8dp"
+                android:text="🔥 Free Fire Highlight"
+                android:background="@drawable/button_3d_bg"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnStyleVlog"
+                style="?attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginRight="8dp"
+                android:text=" Vlog Cinematic"
+                android:background="@drawable/button_3d_bg"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnStyleStory"
+                style="?attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginRight="8dp"
+                android:text="📖 เล่าเรื่อง (Story)"
+                android:background="@drawable/button_3d_bg"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnStyleAds"
+                style="?attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:text="📢 โฆษณา (Ads)"
+                android:background="@drawable/button_3d_bg"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <Button
+            android:id="@+id/btnAddMedia"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginRight="6dp"
+            android:text="➕ เพิ่มคลิป/เสียง"
+            android:background="@drawable/button_3d_bg"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btnTestEngine"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="6dp"
+            android:text="⚙️ เช็ค FFmpeg"
+            android:background="@drawable/button_3d_bg"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSaveRender"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="🎬 EXPORT / บันทึกวิดีโอ"
+        android:background="@drawable/button_3d_bg"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
+
+</LinearLayout>
