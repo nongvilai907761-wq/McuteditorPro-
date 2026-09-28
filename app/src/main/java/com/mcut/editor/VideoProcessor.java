@@ -6,7 +6,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
-import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
 import androidx.media3.transformer.Transformer;
@@ -28,12 +27,12 @@ public class VideoProcessor {
         this.context = null;
     }
 
-    // [เพิ่มเข้ามา] เมธอดรองรับการเรียกจาก MainActivity แบบ 2 พารามิเตอร์
+    // เมธอดรองรับการเรียกใช้แบบ 2 พารามิเตอร์จาก MainActivity
     public void processVideoWithStyle(String style, List<?> timelineList) {
         Log.d(TAG, "processVideoWithStyle called with style: " + style + ", items: " + (timelineList != null ? timelineList.size() : 0));
     }
 
-    // เมธอดรองรับการประมวลผลวิดีโอแบบเต็มรูปแบบ (5 พารามิเตอร์) และรองรับสไตล์ M cut editor
+    // เมธอดประมวลผลวิดีโอหลัก ปรับปรุงให้รับทุกสไตล์ไม่ให้เกิด Error Unknown style
     public void processVideoWithStyle(String style, List<?> timelineList, Uri inputUri, File outputPath, final VideoCallback callback) {
         if (context == null) {
             if (callback != null) callback.onError("Context is null");
@@ -43,7 +42,11 @@ public class VideoProcessor {
         try {
             Log.d(TAG, "Processing video with style: " + style);
 
-            if ("M cut editor".equals(style) || "VLOG CINEMATIC".equals(style) || "FREE FIRE HIGHLIGHT".equals(style) || "🔥 FREE FIRE HIGHLIGHT".equals(style) || "🎬 VLOG CINEMATIC".equals(style)) {
+            // แปลงเป็นตัวพิมพ์ใหญ่เพื่อตรวจสอบความถูกต้องแบบยืดหยุ่น
+            String styleUpper = style != null ? style.toUpperCase().trim() : "";
+
+            // ให้ผ่านเงื่อนไขเรนเดอร์ได้ทันทีทุกสไตล์ที่มีการกดเลือก
+            if (!styleUpper.isEmpty()) {
                 MediaItem mediaItem = MediaItem.fromUri(inputUri);
 
                 transformer = new Transformer.Builder(context)
