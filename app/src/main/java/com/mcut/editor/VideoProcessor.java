@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
-import androidx.media3.common.MimeTypes;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.EditedMediaItemSequence;
@@ -46,10 +45,7 @@ public class VideoProcessor {
             if (timelineList != null && !timelineList.isEmpty()) {
                 // วนลูปแปลงทุก MediaItem ในไทม์ไลน์ให้เป็น EditedMediaItem
                 for (MediaItem mediaItem : timelineList) {
-                    // สำหรับรูปภาพ เราสามารถกำหนดระยะเวลาแสดงผลบนวิดีโอได้ (เช่น ให้แสดงรูปละ 3 วินาที หรือ 3000 มิลลิวินาที)
-                    EditedMediaItem editedItem = new EditedMediaItem.Builder(mediaItem)
-                            // .setDurationMs(3000) // เปิดบรรทัดนี้ได้ถ้าต้องการกำหนดเวลาให้รูปภาพ
-                            .build();
+                    EditedMediaItem editedItem = new EditedMediaItem.Builder(mediaItem).build();
                     editedMediaItems.add(editedItem);
                 }
             } else if (fallbackUri != null) {
@@ -61,19 +57,15 @@ public class VideoProcessor {
                 return;
             }
 
-            // สร้าง Sequence สำหรับรวมสื่อทั้งหมดเข้าด้วยกันตามลำดับในไทม์ไลน์
+            // สร้าง Sequence และ Composition (ตัดเมธอด setVideoMimeType ที่ไม่รองรับออก)
             EditedMediaItemSequence sequence = new EditedMediaItemSequence(editedMediaItems);
-            Composition composition = new Composition.Builder(sequence)
-                    .setVideoMimeType(MimeTypes.VIDEO_H264)
-                    .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                    .build();
+            Composition composition = new Composition.Builder(sequence).build();
 
-            transformer = new Transformer.Builder(context)
-                    .build();
+            transformer = new Transformer.Builder(context).build();
 
             transformer.addListener(new Transformer.Listener() {
                 @Override
-                public void onCompleted(@NonNull Composition composition) {
+                public void onCompleted(@NonNull Composition composition, @NonNull ExportResult exportResult) {
                     Log.d(TAG, style + " Multi-media Export Completed Successfully");
                     if (callback != null) callback.onSuccess(outputPath);
                 }
@@ -97,7 +89,6 @@ public class VideoProcessor {
     }
 
     public void processAndExportVideo(Uri inputUri, File outputPath, final VideoCallback callback) {
-        // เมธอดสำรองเพื่อความเข้ากันได้
         List<MediaItem> singleList = new ArrayList<>();
         singleList.add(MediaItem.fromUri(inputUri));
         processVideoWithStyle("Default", singleList, inputUri, outputPath, callback);
